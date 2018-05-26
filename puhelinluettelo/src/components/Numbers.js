@@ -6,7 +6,7 @@ const Numbers = (props) => {
         <div>
             <h2>Numerot</h2>
             <ul>
-                {props.persons.map(Number)}
+                {props.persons.map(p => <Number number={p} removeHandler={props.removeHandler} />)}
             </ul>
         </div>
     )

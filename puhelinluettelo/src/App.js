@@ -2,7 +2,7 @@ import React from 'react';
 import Numbers from "./components/Numbers"
 import Form from "./components/Form"
 import Search from "./components/Search"
-import axios from "axios"
+import persons from "./services/persons"
 
 class App extends React.Component {
   constructor(props) {
@@ -16,7 +16,7 @@ class App extends React.Component {
   }
 
   componentDidMount() {
-    axios.get("http://localhost:3001/persons")
+    persons.getAll()
       .then(response => {
         this.setState({persons: response.data})
       })
@@ -29,16 +29,29 @@ class App extends React.Component {
       number: this.state.newNumber
     }
 
-    if (undefined !== this.state.persons.find(p => p.name === this.state.newName)) {
-      alert(`Henkilö nimellä ${this.state.newName} on jo luettelossa`)
+    const existingNumber = this.state.persons.find(p => p.name === this.state.newName);
+    if (undefined !== existingNumber) {
+      if (window.confirm(`Henkilö nimellä ${this.state.newName} on jo luettelossa. Haluatko korvata numeron?`)) {
+        existingNumber.number = this.state.newNumber
+        persons.update(existingNumber.id, existingNumber)
+            .then(response => {
+              this.setState({
+                  persons: this.state.persons.map(p => p.id !== existingNumber.id ? p : response.data)
+              })
+            })
+      }
+
       return
     }
 
-    this.setState({
-      persons: this.state.persons.concat(newNumber),
-      newName: "",
-      newNumber: ""
-    });
+    persons.add(newNumber)
+        .then(response => {
+          this.setState({
+              persons: this.state.persons.concat(response.data),
+              newName: "",
+              newNumber: ""
+          })
+        })
   }
 
   nameChangeHandler = (e) => {
@@ -57,6 +70,17 @@ class App extends React.Component {
     this.setState({
       filter: e.target.value
     })
+  }
+
+  removeHandler = (id) => {
+    return () => {
+      persons.remove(id)
+          .then(response => {
+            this.setState({
+                persons: this.state.persons.filter(p => p.id !== id)
+            })
+          })
+    }
   }
 
   filteredPersons() {
@@ -82,7 +106,10 @@ class App extends React.Component {
           nameChangeHandler={this.nameChangeHandler}
           numberChangeHandler={this.numberChangeHandler}
         />
-        <Numbers persons={this.filteredPersons()} />
+        <Numbers
+            persons={this.filteredPersons()}
+            removeHandler={this.removeHandler}
+        />
       </div>
     )
   }
