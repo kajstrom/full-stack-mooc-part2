@@ -2,6 +2,7 @@ import React from 'react';
 import Numbers from "./components/Numbers"
 import Form from "./components/Form"
 import Search from "./components/Search"
+import Notification from "./components/Notification"
 import persons from "./services/persons"
 
 class App extends React.Component {
@@ -11,7 +12,8 @@ class App extends React.Component {
       persons: [],
       newName: '',
       newNumber: '',
-      filter: ''
+      filter: '',
+      notification: null
     }
   }
 
@@ -38,6 +40,21 @@ class App extends React.Component {
               this.setState({
                   persons: this.state.persons.map(p => p.id !== existingNumber.id ? p : response.data)
               })
+
+              this.addNotification(`päivitetty numero ${this.state.newName}`)
+            })
+            .catch(response => {
+              persons.add(newNumber)
+                .then(response => {
+                  this.setState({
+                    persons: this.state.persons.filter(p => p.id !== existingNumber.id).concat(response.data),
+                    newName: "",
+                    newNumber: ""
+                })
+      
+                
+                this.addNotification(`lisättiin ${response.data.name}`)        
+                })
             })
       }
 
@@ -51,6 +68,8 @@ class App extends React.Component {
               newName: "",
               newNumber: ""
           })
+
+          this.addNotification(`lisättiin ${response.data.name}`)
         })
   }
 
@@ -79,6 +98,8 @@ class App extends React.Component {
             this.setState({
                 persons: this.state.persons.filter(p => p.id !== id)
             })
+
+            this.addNotification(`numero poistettu`)
           })
     }
   }
@@ -91,10 +112,22 @@ class App extends React.Component {
     return this.state.persons.filter(p => p.name.indexOf(this.state.filter) !== -1)
   }
 
+  addNotification(notification) {
+    this.setState({
+      notification
+    })
+    setTimeout(() => {
+      this.setState({
+        notification: null
+      })
+    }, 3000)
+  }
+
   render() {
     return (
       <div>
         <h2>Puhelinluettelo</h2>
+        <Notification message={this.state.notification} />
         <Search
           filter={this.state.filter}
           handler={this.filterChangeHandler}
